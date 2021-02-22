@@ -12,18 +12,6 @@ interface RegistryAPI {
         returns (address);
 }
 
-struct StrategyParams {
-    uint256 performanceFee;
-    uint256 activation;
-    uint256 debtRatio;
-    uint256 minDebtPerHarvest;
-    uint256 maxDebtPerHarvest;
-    uint256 lastReport;
-    uint256 totalDebt;
-    uint256 totalGain;
-    uint256 totalLoss;
-}
-
 interface VaultAPI {
     function token() external view returns (address);
 
@@ -32,6 +20,11 @@ interface VaultAPI {
         view
         returns (StrategyParams memory);
 }
+
+import {
+    StrategyParams,
+    StrategyAPI
+} from "@yearnvaults/contracts/BaseStrategy.sol";
 
 contract GuestList {
     RegistryAPI public registry;
@@ -52,25 +45,28 @@ contract GuestList {
         if (guests[_guest] == true) {
             return true;
         } else if (guests[_guest] != true) {
-            address token = VaultAPI(msg.sender).token();
-            return findInExistingStrategies(token, _guest);
+            return isValidStrategy(_guest);
         }
         return false;
     }
 
-    function findInExistingStrategies(address token, address _guest)
-        public
-        view
-        returns (bool)
-    {
-        VaultAPI[] memory vaults = allVaults(token);
+    function isValidStrategy(address _guest) private view returns (bool) {
+        VaultAPI vault = VaultAPI(StrategyAPI(_guest).vault());
+        if (vault.strategies(_guest).activation == 0) {
+            return false;
+        }
+        return isVaultInRegistry(vault);
+    }
 
+    function isVaultInRegistry(VaultAPI vault) private view returns (bool) {
+        address token = vault.token();
+        uint256 num_deployments = registry.nextDeployment(token);
+        VaultAPI[] memory vaults = allVaults(token);
         for (uint256 v = 0; v < vaults.length; v++) {
-            if (vaults[v].strategies(_guest).activation != 0) {
+            if (vaults[v] == vault) {
                 return true;
             }
         }
-
         return false;
     }
 
