@@ -10,6 +10,8 @@ interface RegistryAPI {
         external
         view
         returns (address);
+
+    function governance() external view returns (address);
 }
 
 interface VaultAPI {
@@ -32,9 +34,9 @@ contract GuestList {
     VaultAPI[] private _cachedVaults;
     address public governance;
 
-    constructor(address _governance, address _registry) public {
-        governance = _governance;
+    constructor(address _registry) public {
         registry = RegistryAPI(_registry);
+        governance = registry.governance();
     }
 
     function authorized(address _guest, uint256 _amount)

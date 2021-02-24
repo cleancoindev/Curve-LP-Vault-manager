@@ -28,7 +28,7 @@ def token(pm, gov):
 
 @pytest.fixture
 def guest_list(gov, GuestList, registry):
-    yield gov.deploy(GuestList, gov, registry)
+    yield gov.deploy(GuestList, registry)
 
 
 @pytest.fixture
