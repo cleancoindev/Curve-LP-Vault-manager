@@ -32,11 +32,9 @@ contract GuestList {
     RegistryAPI public registry;
     mapping(address => bool) public guests;
     VaultAPI[] private _cachedVaults;
-    address public governance;
 
     constructor(address _registry) public {
         registry = RegistryAPI(_registry);
-        governance = registry.governance();
     }
 
     function authorized(address _guest, uint256 _amount)
@@ -105,7 +103,7 @@ contract GuestList {
     }
 
     function updateVaultCache(address token) public {
-        require(msg.sender == governance);
+        require(msg.sender == registry.governance());
         VaultAPI[] memory vaults = allVaults(token);
 
         if (vaults.length > _cachedVaults.length) {
@@ -113,15 +111,15 @@ contract GuestList {
         }
     }
 
-    function invite_guest(address guest) public {
-        require(msg.sender == governance);
+    function inviteGuest(address guest) public {
+        require(msg.sender == registry.governance());
 
         require(!guests[guest]);
         guests[guest] = true;
     }
 
-    function revoke_guest(address guest) public {
-        require(msg.sender == governance);
+    function revokeGuest(address guest) public {
+        require(msg.sender == registry.governance());
 
         guests[guest] = false;
     }
