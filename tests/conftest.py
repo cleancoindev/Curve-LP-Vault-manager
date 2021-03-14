@@ -27,18 +27,20 @@ def token(pm, gov):
 
 
 @pytest.fixture
-def guest_list(gov, GuestList):
-    yield gov.deploy(GuestList, gov)
+def guest_list(gov, GuestList, registry):
+    yield gov.deploy(GuestList, registry)
 
 
 @pytest.fixture
-def vault(pm, gov, rewards, management, guest_list, token):
+def vault(pm, gov, rewards, management, guest_list, token, registry):
     Vault = pm(config["dependencies"][0]).Vault
     vault = gov.deploy(Vault)
     vault.initialize(token, gov, rewards, "", "", gov)
     vault.setDepositLimit(2 ** 256 - 1, {"from": gov})
     vault.setManagement(management, {"from": gov})
     vault.setGuestList(guest_list, {"from": gov})
+    registry.newRelease(vault)
+
     yield vault
 
 
@@ -55,5 +57,25 @@ def invited(accounts, token, gov, guest_list, vault):
 def not_invited(accounts, token, gov, vault):
     token.transfer(accounts[2], 100 * 10 ** 18)
     token.approve(vault, 2 ** 256 - 1, {"from": accounts[2]})
-
+    
     yield accounts[2]
+
+@pytest.fixture
+def registry(gov, pm):
+    Registry = pm(config["dependencies"][0]).Registry
+
+    yield Registry.deploy({"from": gov})
+
+@pytest.fixture
+def strategy(pm, gov, vault, token):
+    TestStrategy = pm(config["dependencies"][0]).TestStrategy
+    strategy = gov.deploy(TestStrategy, vault)
+    vault.addStrategy(strategy,
+        4_000,
+        0,
+        2 ** 256 - 1,
+        1000,
+        {"from": gov})
+    token.transfer(strategy, 100 * 10 ** 18)
+
+    yield strategy
